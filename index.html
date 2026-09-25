@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taqueria La Palma</title>
+<style>
+body{background:#111;color:#fff;font-family:sans-serif;text-align:center;padding:20px}
+h1{color:#f5c518;font-size:38px} .item{background:#1c1c1c;padding:15px;margin:10px auto;max-width:500px;border-radius:12px;display:flex;justify-content:space-between}
+button{background:#f5c518;border:none;padding:10px 18px;border-radius:20px;font-weight:900;cursor:pointer}
+#pedir{background:#000;color:#f5c518;width:90%;max-width:500px;padding:18px;font-size:18px;margin-top:20px;border:2px solid #f5c518}
+</style>
+</head>
+<body>
+<h1>TAQUERIA LA PALMA 🌮</h1>
+<p>Monterrey • Pedidos directo a WhatsApp</p>
+<div id="menu"></div>
+<h2>Total: $<span id="total">0</span></h2>
+<button id="pedir">ORDENAR POR WHATSAPP 📲 81 2688 2736</button>
+<script>
+const tacos=[["Taco Bistec",28],["Taco Trompo",28],["Pirata",45],["Campechana",45],["Gringa",48],["Papas",50],["Refresco",25]];
+let carrito={};
+function render(){
+let html="";let tot=0;
+tacos.forEach((t,i)=>{
+let c=carrito[i]||0; tot+=c*t[1];
+html+=`<div class="item"><b>${t[0]} $${t[1]}</b><span><button onclick="c(${i},-1)">-</button> ${c} <button onclick="c(${i},1)">+</button></span></div>`;
+});
+document.getElementById("menu").innerHTML=html;
+document.getElementById("total").innerText=tot;
+}
+function c(i,d){carrito[i]=Math.max(0,(carrito[i]||0)+d); if(carrito[i]==0) delete carrito[i]; render();}
+render();
+document.getElementById("pedir").onclick=()=>{
+let lines=[];let tot=0;
+Object.keys(carrito).forEach(i=>{lines.push(`${carrito[i]}x ${tacos[i][0]}`); tot+=carrito[i]*tacos[i][1];});
+if(!lines.length){alert("Agrega tacos!");return;}
+let msg=`Hola La Palma 🌮 Quiero:%0A${lines.join("%0A")}%0ATotal: $${tot}%0ADireccion: `;
+window.open(`https://wa.me/528126882736?text=${msg}`,"_blank");
+}
+</script>
+</body>
+</html>
