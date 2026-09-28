@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Taqueria Javi - Ordena</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui}body{margin:0;background:#121212;color:#fff}
+.card{background:#1e1e1e;border-radius:18px;padding:14px;margin:12px;border:1px solid #2a2a2a}
+.btn{width:100%;padding:16px;border-radius:14px;border:0;font-weight:900;font-size:17px;cursor:pointer}
+.btn-gold{background:#ffb703;color:#000}.btn-dark{background:#2c2c2c;color:#fff;border:1px solid #444}
+.prod{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2a2a2a}
+.qbtn{width:38px;height:38px;border-radius:10px;border:0;background:#2a2a2a;color:#fff;font-size:22px;font-weight:900}
+.totalBox{font-size:24px;font-weight:900;background:#000;padding:10px;border-radius:10px;margin-top:8px;text-align:center}
+input,textarea{width:100%;padding:14px;border-radius:12px;border:1px solid #333;background:#0f0f0f;color:#fff;font-size:16px}
+.folio{font-family:monospace;background:#000;padding:6px 12px;border-radius:8px;font-weight:900}
+#vistaConfirm,#vistaGracias{display:none}
+</style>
+</head>
+<body>
+<div id="vistaMenu">
+<div class="card" style="text-align:center;border:2px solid #ffb703">
+<h1 style="margin:0">Bienvenido a<br>Taquería Javi 🌮</h1>
+<p>¿Cómo te lo preparamos?</p>
+<div style="display:flex;gap:10px;margin-top:10px">
+<button class="btn btn-gold" id="bMost" onclick="setTipo('mostrador')">🏪 Recoger en Mostrador</button>
+<button class="btn btn-dark" id="bDomi" onclick="setTipo('domicilio')">🛵 A Domicilio (+$25)</button>
+</div>
+<p id="tipoTxt" style="color:#ffb703;font-weight:800;margin:10px 0 0">Elige una opción</p>
+</div>
+<div class="card" style="display:flex;gap:10px;align-items:end">
+<div style="flex:1"><label>Nombre del cliente</label><input id="nombre" placeholder="Ej: Javi"></div>
+<div style="text-align:center"><label>Folio</label><div class="folio" id="folio">000</div></div>
+</div>
+<div class="card">
+<b>📋 Menú Taquería Javi - Agrega tu pedido</b>
+<div id="menu" style="margin-top:12px"></div>
+</div>
+<div class="card">
+<b>Tu Nota:</b>
+<div id="notaPreview" style="background:#111;padding:10px;border-radius:10px;margin:8px 0;color:#aaa;min-height:40px">Vacía</div>
+<label>Nota para cocina</label>
+<textarea id="notaCliente" rows="2" placeholder="ejemplo doble salsita&#10;cebolla aparte&#10;doraditos los tacos"></textarea>
+<small style="color:#888">Si no escribes nada, no aparece en cocina</small>
+<div id="totales"></div>
+<button class="btn btn-gold" style="margin-top:12px" onclick="irConfirmar()">ORDENAR →</button>
+</div>
+</div>
+<div id="vistaConfirm">
+<div class="card">
+<button class="btn btn-dark" style="width:auto" onclick="volver()">← Atrás (editar)</button>
+<h2 style="font-size:30px">Confirma tu pedido</h2>
+<div style="background:#111;padding:12px;border-radius:12px">
+<p>Cliente: <b id="cNombre"></b><br>Folio: <b id="cFolio"></b><br>Tipo: <b id="cTipo"></b></p>
+<div id="cDetalle" style="background:#1a1a1a;padding:10px;border-radius:10px;margin:10px 0"></div>
+<div id="cTotal" class="totalBox"></div>
+<div id="cNota" style="color:#ffb703;margin-top:8px;font-weight:700"></div>
+</div>
+<div style="margin-top:16px"><label style="font-weight:900">Tu WhatsApp</label><input id="whats" type="tel" placeholder="8112345678"><small>La copia de tu pedido te la enviamos por Whatsapp</small>
+<button class="btn btn-gold" style="margin-top:12px;font-size:20px" onclick="enviar()">ENVIAR PEDIDO 🔥</button></div>
+</div>
+</div>
+<div id="vistaGracias"><div class="card" style="text-align:center;padding:30px 14px"><h1>✅</h1><h2>¡Pedido enviado!</h2><p>Folio <b id="gFolio"></b> - <span id="gNombre"></span></p><p id="gTipo" style="color:#ffb703;font-weight:800"></p><div id="gDetalle" style="background:#111;padding:12px;border-radius:12px;text-align:left"></div><button class="btn btn-dark" style="margin-top:12px" onclick="location.reload()">Nuevo pedido</button></div></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, doc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const firebaseConfig = { apiKey: "AIzaSyAJG7IjvvALqEglWyxYeeAadbG0yYBDEL0", authDomain: "taqueria-40c71.firebaseapp.com", projectId: "taqueria-40c71", storageBucket: "taqueria-40c71.firebasestorage.app", messagingSenderId: "536022224393", appId: "1:536022224393:web:91c205d366d4060736b2d8", measurementId: "G-X59B32XMQV" };
+const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+const productos = [{n:"Taco Suelto",p:20},{n:"Taco Trompo",p:25},{n:"Taco Bistec",p:30},{n:"Taco Pastor",p:28},{n:"Gringa",p:70},{n:"Torta",p:65},{n:"Quesadilla",p:40},{n:"Coca 600ml",p:25},{n:"Agua 600ml",p:20}];
+let carrito={}; let tipo=null; let folioNum=0;
+function renderMenu(){const m=document.getElementById('menu');m.innerHTML=productos.map((pr,i)=>`<div class="prod"><div><b>${pr.n}</b><br><small style="color:#ffb703">$${pr.p}</small></div><div style="display:flex;align-items:center;gap:8px"><button class="qbtn" onclick="cambiar(${i},-1)">-</button><b id="q${i}" style="min-width:20px;text-align:center">${carrito[i]||0}</b><button class="qbtn" style="background:#ffb703;color:#000" onclick="cambiar(${i},1)">+</button></div></div>`).join('');renderTot();}
+window.cambiar=(i,d)=>{carrito[i]=(carrito[i]||0)+d;if(carrito[i]<=0) delete carrito[i];const el=document.getElementById('q'+i);if(el) el.innerText=carrito[i]||0;renderTot();}
+function getTot(){let sub=0,txt="";Object.keys(carrito).forEach(k=>{let pr=productos[k];txt+=`${carrito[k]}x ${pr.n} - $${carrito[k]*pr.p}<br>`;sub+=carrito[k]*pr.p;});let envio=(tipo==='domicilio'&&Object.keys(carrito).length>0)?25:0;return{sub,envio,total:sub+envio,txt};}
+function renderTot(){let {sub,envio,total,txt}=getTot();document.getElementById('notaPreview').innerHTML=txt||'Vacía';document.getElementById('totales').innerHTML=Object.keys(carrito).length?`<div style="margin-top:10px">Subtotal $${sub}${envio?`<br><span style="background:#ffb703;color:#000;padding:2px 6px;border-radius:6px;font-weight:800">Envío $25</span>`:''}<div class="totalBox">TOTAL $${total}</div></div>`:'';}
+window.setTipo=(t)=>{tipo=t;document.getElementById('bMost').className=t==='mostrador'?'btn btn-gold':'btn btn-dark';document.getElementById('bDomi').className=t==='domicilio'?'btn btn-gold':'btn btn-dark';document.getElementById('tipoTxt').innerText=t==='mostrador'?'✓ Recoger en mostrador':'✓ A domicilio (+$25)';renderTot();}
+async function folioHoy(){const hoy=new Date().toISOString().slice(0,10);const ref=doc(db,'folios',hoy);try{folioNum=await runTransaction(db, async(tx)=>{const s=await tx.get(ref);if(s.exists()){let n=s.data().contador+1;tx.update(ref,{contador:n});return n;}else{tx.set(ref,{contador:1,fecha:hoy});return 1;}});}catch(e){folioNum=1;}document.getElementById('folio').innerText=String(folioNum).padStart(3,'0');}
+folioHoy();renderMenu();
+window.irConfirmar=()=>{let nom=document.getElementById('nombre').value.trim();if(!nom) return alert('Pon tu nombre');if(!tipo) return alert('Elige mostrador o domicilio');if(!Object.keys(carrito).length) return alert('Agrega tacos del menú');let {sub,envio,total,txt}=getTot();document.getElementById('vistaMenu').style.display='none';document.getElementById('vistaConfirm').style.display='block';document.getElementById('cNombre').innerText=nom;document.getElementById('cFolio').innerText=document.getElementById('folio').innerText;document.getElementById('cTipo').innerText=tipo==='mostrador'?'Recoger en Mostrador':'A Domicilio';document.getElementById('cDetalle').innerHTML=txt+(envio?'+ Envío $25<br>':'');document.getElementById('cTotal').innerText='TOTAL $'+total;let nota=document.getElementById('notaCliente').value.trim();document.getElementById('cNota').innerText=nota?'Nota: '+nota:'';}
+window.volver=()=>{document.getElementById('vistaConfirm').style.display='none';document.getElementById('vistaMenu').style.display='block';}
+window.enviar=async()=>{let whats=document.getElementById('whats').value.replace(/\D/g,'');if(whats.length<10) return alert('Pon tu WhatsApp 10 dígitos');let {sub,envio,total}=getTot();let nota=document.getElementById('notaCliente').value.trim()||null;let pedido={folio:document.getElementById('folio').innerText,folioNum,nombre:document.getElementById('nombre').value.trim(),tipo,subtotal:sub,envio,total,carrito:Object.keys(carrito).map(k=>({nombre:productos[k].n,cantidad:carrito[k],precio:productos[k].p})),notaCliente:nota,whats,estado:'pendiente',fecha:serverTimestamp(),dia:new Date().toISOString().slice(0,10)};await addDoc(collection(db,'pedidos'),pedido);document.getElementById('vistaConfirm').style.display='none';document.getElementById('vistaGracias').style.display='block';document.getElementById('gFolio').innerText=pedido.folio;document.getElementById('gNombre').innerText=pedido.nombre;document.getElementById('gTipo').innerText=pedido.tipo==='mostrador'?'Recoger en mostrador':'A domicilio';document.getElementById('gDetalle').innerHTML=Object.keys(carrito).map(k=>`${carrito[k]}x ${productos[k].n}`).join('<br>')+(envio?'<br>+ Envío $25':'')+`<br><b>TOTAL $${total}</b>`+(nota?`<br><br>Nota: ${nota}`:'');let msg=`*Taqueria Javi* Folio ${pedido.folio} - ${pedido.nombre} - ${pedido.tipo} - TOTAL $${total}`;setTimeout(()=>window.open(`https://wa.me/52${whats}?text=${encodeURIComponent(msg)}`,'_blank'),600);}
+</script>
+</body>
+</html>
